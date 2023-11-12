@@ -1,0 +1,5 @@
+* Compile without debug.
+* In openqm routine if buffer overflow create temporary file and return the name to httpd server.
+* In post data create temporary file.
+* Add comments.
+* Make git project.
