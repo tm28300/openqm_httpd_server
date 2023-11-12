@@ -1,8 +1,9 @@
 EXEC_NAME=openqm_httpd_server
 OBJS=openqm_httpd_server.o openqm_httpd_server_config.o openqm_httpd_server_url.o
-INCLUDES=-I/home/openqm/openqm.account/SYSCOM -I/home/openqm/openqm.account/gplsrc
+OPENQM_ROOT=/home/thierry/openqm
+INCLUDES=-I$(OPENQM_ROOT)/openqm.account/SYSCOM -I$(OPENQM_ROOT)/openqm.account/gplsrc
 CCFLAGS=-Wall -g
-LT_LDFLAGS=/home/openqm/openqm.account/bin/qmclilib64.o /home/openqm/openqm.account/gplobj/match_template64.o -lmicrohttpd -lconfig -lpcre
+LT_LDFLAGS=$(OPENQM_ROOT)/openqm.account/bin/qmclilib64.o $(OPENQM_ROOT)/openqm.account/gplobj/match_template64.o -lmicrohttpd -lconfig -lpcre
 DEPDIR := .deps
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 
