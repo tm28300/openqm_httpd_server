@@ -1,55 +1,104 @@
 # Description
 
-openqm_httpd_server est un serveur web http autonome et léger. Ce serveur permet de répondre à tous les types de requête web et de renvoyer une réponse composée d'une en-tête, d'un statut httpd et d'un contenu correspondant au Content-Type. Le contenu de la réponse sera le plus souvent sous format texte. Bien qu'OpenQM supporte la gestion des flux binaires on évitera de gérer ce type de contenu qui sera beaucoup mieux pris en charge par d'autres technologies. Chaque requête valide est prise en charge par une routine. Cette routine reçoit toutes les informations en entrée, l'url, la méthode, les données en paramètre GET ou POST, les données d'en-tête, l'adresse du client et certaines informations du serveur. Contrairement à mon premier essai avec openqm_https_mod, un module Apache httpd, ce serveur prend en charge :
-- La personnalisation de la réponse lorsqu'il y a un statut d'erreur. C'est interessant dans le cadre d'une API lorsque l'on doit par exemple valider un formulaire et que l'on souhaite renvoyer un message d'erreur contenant un code numérique, un message et le champ auquel se rapporte l'erreur. Dans ce cas on peut par exemple utiliser le statut 400 (bad request) avec un retour json/xml contenant ces informations.
-- La requête ne contient pas le nom de la routine OpenQM à appeler, ainsi on dévoile moins d'informations techniques. C'est un fichier de configuration qui permet de faire la correspondance entre le couple url/méthode et la routine à appeler.
+The openqm_httpd_server software is a standalone and lightweight http web server. This server allows you to respond to all types of web requests and return a response composed of a header, an httpd status and content corresponding to the Content-Type. The content of the response will most often be in text format. Although OpenQM supports the management of binary streams, we will avoid managing this type of content which will be much better supported by other technologies. Each valid request is handled by a routine. This routine receives all the input information, the url, the method, the GET or POST parameter data, the header data, the client address and some server information. Unlike my first try with openqm_https_mod, an Apache httpd module, this server supports:
+- Customization of the response when there is an error status. This is interesting in the context of an API when, for example, you have to validate a form and you want to return an error message containing a numerical code, a message and the field to which the error relates. In this case we can for example use the status 400 (bad request) with a json/xml return containing this information.
+- The request does not contain the name of the OpenQM routine to call, so less technical information is revealed. It is a configuration file which allows the correspondence between the url/method pair and the routine to be called.
 
-Ce serveur n'a pas pour vocation à être appelé directement depuis le web, au lieu de ça il est préférable que les requêtes arrivent à un serveur plus complet comme Apache httpd. Ce serveur Apache httpd va ensuite renvoyer les requêtes au serveur openqm_httpd_server en proxy reverse. L'avantage de cette configuration c'est que l'on va bénéficier :
-- D'un serveur léger et flexible pour répondre aux requêtes (openqm_httpd_server).
-- D'un serveur robuste, configurable et extensible pour répondre de façon sécurisée aux requêtes provenant de l'extérieur (Apache httpd ou autre). C'est à ce serveur de prendre en charge le chiffrage de la connexion via le https et les normes liées.
-- D'avoir un seul nom de host pour contenir d'une part l'application web (page html statique, application basée sur un framework comme ReactOS ou VueJS, les ressources comme les css, les images et les polices de caractères) et d'autres part l'API qui va interagir avec notre base de données nosql OpenQM/ScarletDME.
+This server is not intended to be called directly from the web, instead it is preferable that requests arrive at a more complete server like Apache httpd. This Apache httpd server will then send the requests to the openqm_httpd_server server as a reverse proxy. The advantage of this configuration is that we will benefit from:
+- A light and flexible server to respond to requests (openqm_httpd_server).
+- A robust, configurable and extensible server to respond securely to requests from outside (Apache httpd or other). It is up to this server to take care of the encryption of the connection via https and related standards.
+- To have a single host name to contain on the one hand the web application (static html page, application based on a framework such as ReactOS or VueJS, resources such as css, images and fonts) and On the other hand, the API which will interact with our nosql OpenQM/ScarletDME database.
    
 # Installation
 
-## Dépendances
+The software must be compiled and requires the following dependencies:
+- gcc
+- makefile
 - libmicrohttpd12
 - libmicrohttpd_dev
 - libconfig9
 - libconfig_dev
 
-# Utilisation
+Then you need to run **make** command to produce the executable file. After that, you need to manualy copy this file and create the configuration file (see below).
 
-Le serveur est un programme exécutable qui est paramétré via un fichier de configuration. Une fois le programme exécuté en fantôme il va répondre aux requêtes web qu'il reçoit et appelant une routine lorsque l'uri correspond à l'une de celles paramétrées.
+# Use
+
+The server is an executable program which is configured via a configuration file. Once the program is executed in daemon, it will respond to the web requests it receives and call a routine when the url corresponds to one of those configured.
 
 ## Configuration
 
-Le fichier de configuration a une syntaxe [libconfig](http://hyperrealm.github.io/libconfig/). Au premier niveau le fichier de configuration doit contenir :
+The configuration file has a syntax [libconfig](http://hyperrealm.github.io/libconfig/). At the first level the configuration file must contain:
 
 ### httpd
 
-Permet de définir les paramètres du serveur. Il est composé de :
-- port = Numéro du port auquel le serveur répond.
-- env : Un tableau qui contient les variables d'environnement du serveur. Par exemple QMCONFIG = le chemin et le nom du fichier de configuration OpenQM alternatif à /etc/openqm.conf.
+Allows you to define server settings. It is composed of :
+- port = Port number to which the server responds.
+- env: An array that contains the server environment variables. For example QMCONFIG = the path and name of the OpenQM configuration file alternative to /etc/openqm.conf.
 
 ### openqm
 
-Permet de définir les paramètres d'OpenQM. Il est composé de l'unique variable :
-- account = Nom du compte OpenQM dans lequel sont cataloguées les routines.
+Allows you to define OpenQM parameters. It is composed of the single variable:
+- account = Name of the OpenQM account in which the routines are cataloged.
 
 ### url
 
-Permet de définir les url valides, les contrôles à réaliser et la routine à appeler. Il s'agit d'un tableau d'objets. Chaque objet est un chemin d'url (un seul niveau à la fois) et contient :
-- path = Nom d'un niveau de sous-répertoire dans l'url.
-- sub_path : Est un tableau d'objets de même nature que celui-ci pour le niveau suivant de sous-répertoire.
-- pattern = Une expression régulière qui permet de valider un sous-répertoire à la place de path.
-- subr = Nom de la routine à appeler.
-- method = Un tableau de chaînes indiquant les méthodes http utilisables pour appeler la routine.
-- get_param = Un tableau de chaînes indiquant la liste des paramètres acceptés lors d'un appel GET.
+Allows you to define the valid URLs, the checks to perform and the routine to call. This is an array of objects. Each object is an URL path (one level at a time) and contains:
+- path = Name of a subdirectory level in the url.
+- sub_path: Is an array of objects of the same syntax as this one for the next level of subdirectory.
+- pattern = A regular expression which allows you to validate a subdirectory instead of path.
+- subr = Name of an OpenQM routine to be called.
+- method = An array of strings indicating the http methods that can be used by the request.
+- get_param = An array of strings indicating the list of parameters accepted for GET parameters.
+
+path and pattern cannot be defined at the same time. The url '/' cannot be configured.
 
 ## Routines
 
+The routine called to respond to a request requires 13 parameters. The first 10 are used in input:
+- auth_type :
+- hostname
+- header_in
+- query_string
+- post_dynarray
+- remote_info : Not implemented. In the future will contain the IP address and port of the client that called the server.
+- remote_user
+- method
+- uri
+- server_info : IP address, port and protocol of the server in a dynamic array with two attributes linked in multi-values. The first attribute contains the parameter name and the second its value. The implementation is partial and this variable only contains the protocol (http or https).
+  
+Then 3 input/output parameters:
+- http_output
+- http_status
+- header_out
+
+## Error handling by this software
+
+Before and after calling the routine, the software performs the following checks which can trigger an error with the corresponding http status:
+- If the url is '/' or does not correspond to any of those configured, the http status returned is 404 (not found).
+- If the url corresponds to one of those configured but there is no routine name, the http status returned is 404 (not found).
+- If there is not enough memory to process the request, the http status returned is 500 (internal server error).
+- If the method was not authorized in the configuration file, the http status returned is 405 (method not allowed).
+- If the request contains a query string the following checks are processed:
+    - If in the configuration file there is a get_param table and the parameter name is missing from the values list, the http status returned is 400 (bad request).
+    - If the value of the parameter is greater than 16KB, the http status returned is 400 (bad request).
+- If the name of the called host is missing, the http status returned is 400 (bad request).
+- If the server cannot connect to OpenQM, the http status returned is 503 (service unavailable).
+- After call the routine the http_status parameter isn't modified, the http status returned is 500 (internal server error).
+
+If the routine returns an empty response and an http error status code or if the software generates an http error status code then the server will generate a default error page. This error page is a minimalist html page containing a title " Error" and containing the error message in English.
+
+When the software encounters a problem generating an http error status and a detailed message in syslog.
+
+# Limitations
+
+The server can only respond to one domain name.
+
+The url '/' can't be used and systematically returns http status 404 (not found).
+
 # TODO
 
-Dans la configuration ajouter un post_param pour limiter les paramètres post acceptés.
+In the configuration add a **post_param** array to limit the accepted POST parameters (same as get_param).
 
-Gérer la réception de fichiers via une méthode post et écrire le fichier reçu dans un répertoire temporaire avec un nom de fichier temporaire et aléatoire.
+Handle receiving files via a POST method and write this to a temporary directory with a temporary, random file name.
+
+Generate an error page depending on the **accept** in request header (html, json or xml), the language in request header and the http status returned.
