@@ -1,3 +1,5 @@
+# uncomment to add many debug messages
+#DEBUG_FLAG=-DOHS_DEBUG
 EXEC_NAME=openqm_httpd_server
 OBJS=openqm_httpd_server.o openqm_httpd_server_config.o openqm_httpd_server_url.o
 OPENQM_ROOT=/home/thierry/openqm
@@ -14,7 +16,7 @@ $(EXEC_NAME): $(OBJS)
 
 %.o : %.c
 %.o : %.c $(DEPDIR)/%.d | $(DEPDIR)
-	gcc $(CCFLAGS) $(DEPFLAGS) $(INCLUDES) -c $< -o $@
+	gcc $(CCFLAGS) $(DEPFLAGS) $(INCLUDES) $(DEBUG_FLAG) -c $< -o $@
 
 $(DEPDIR): ; @mkdir -p $@
 
